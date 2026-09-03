@@ -26,7 +26,7 @@ jobs:
       - run: npm run build
       - uses: actions/upload-pages-artifact@v2
         with:
-          path: dist   # โฟลเดอร์ output ของ Vite
+          path: dist
 
   deploy:
     runs-on: ubuntu-latest
