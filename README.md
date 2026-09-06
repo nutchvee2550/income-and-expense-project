@@ -38,6 +38,11 @@ Income and Expense Project/
 │   ├── get_transactions.php / add_transaction.php / edit_transaction.php / delete_transaction.php
 │   ├── get_categories.php / add_category.php / delete_category.php
 │   └── get_quick_amounts.php / add_quick_amount.php / delete_quick_amount.php
+├── docker/
+│   └── init.sql             # โครงสร้างตาราง ใช้ตอนรันผ่าน Docker (สร้างฐานข้อมูลอัตโนมัติ)
+├── Dockerfile               # build frontend + เตรียม PHP/Apache สำหรับ Docker
+├── docker-compose.yml       # สั่งรันเว็บ + MySQL พร้อมกันด้วย docker compose
+├── deploy-infinityfree/     # ไฟล์/คู่มือสำหรับอัปโหลดขึ้น InfinityFree
 └── dist/                    # ไฟล์ที่ได้จากการ build (สร้างเองด้วย npm run build)
 ```
 
@@ -61,6 +66,42 @@ Income and Expense Project/
 | `user` | `1234` | ผู้ใช้ทั่วไป |
 
 > ⚠️ เป็นบัญชีทดสอบที่ฝังไว้ในโค้ดตรง ๆ (ไม่ได้เก็บในฐานข้อมูล) เหมาะสำหรับใช้งานส่วนตัว/ทดสอบเท่านั้น ถ้าจะเปิดให้คนนอกเข้าถึงได้กว้างขึ้น ควรเปลี่ยนรหัสผ่านหรือทำระบบสมาชิกจริงก่อน
+
+## รันด้วย Docker
+
+ถ้าไม่อยากติดตั้ง XAMPP/Node เองบนเครื่อง ใช้ Docker รันทั้งระบบ (frontend + PHP + MySQL) ได้ในคำสั่งเดียว โดยไฟล์ `Dockerfile` จะ build หน้าเว็บให้อัตโนมัติจากซอร์สโค้ด ไม่ต้องรัน `npm install`/`npm run build` เองก่อน
+
+### สิ่งที่ต้องมี
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (มี Docker Compose มาให้ในตัวอยู่แล้ว)
+
+### วิธีรัน
+
+```bash
+docker compose up --build
+```
+
+รอจน build เสร็จ (รอบแรกจะช้าหน่อยเพราะต้องโหลด image + npm install) แล้วเปิด:
+
+- เว็บแอป: **http://localhost:8080**
+- ฐานข้อมูล MySQL (ถ้าอยากต่อด้วยโปรแกรมอื่น เช่น DBeaver/TablePlus): host `localhost` พอร์ต `3307` ผู้ใช้ `expense_user` รหัสผ่าน `expense_pass` ฐานข้อมูล `expense_tracker_db`
+
+ครั้งแรกที่รัน ระบบจะสร้างตาราง `transactions`, `categories`, `quick_amounts` ให้อัตโนมัติจากไฟล์ `docker/init.sql` (สร้างเฉพาะตอนฐานข้อมูลว่างครั้งแรกเท่านั้น)
+
+### คำสั่งที่ใช้บ่อย
+
+```bash
+docker compose up --build      # build ใหม่ + รัน (ใช้ตอนแก้โค้ดแล้วอยากลองใหม่)
+docker compose up -d           # รันแบบ background โดยไม่ build ใหม่
+docker compose down            # ปิดและลบ container (ข้อมูลในฐานข้อมูลยังอยู่)
+docker compose down -v         # ปิดและลบข้อมูลฐานข้อมูลทั้งหมดด้วย (เริ่มนับหนึ่งใหม่)
+docker compose logs -f web     # ดู log ฝั่งเว็บ/PHP แบบเรียลไทม์
+```
+
+### หมายเหตุ
+
+- `api/db.php` ถูกปรับให้อ่านค่าเชื่อมต่อฐานข้อมูลจาก Environment Variable ก่อน (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` — ตั้งไว้แล้วใน `docker-compose.yml`) ถ้าไม่มีค่าพวกนี้ (เช่นตอนรันผ่าน XAMPP ปกติ) จะ fallback ไปใช้ค่า `localhost` แบบเดิมให้อัตโนมัติ
+- ไฟล์สำหรับอัปโหลดขึ้น InfinityFree (`deploy-infinityfree/db.infinityfree.php`) เป็นคนละไฟล์ ไม่ได้ใช้ Environment Variable เพราะ InfinityFree ไม่รองรับการตั้งค่าตัวแปรแวดล้อมแบบนี้ — ต้องใช้ไฟล์นั้นแทน `api/db.php` เฉพาะตอนแพ็กไฟล์ไปอัปโหลดขึ้น InfinityFree เท่านั้น ดูรายละเอียดที่ `deploy-infinityfree/วิธีขึ้น-host-InfinityFree.md`
 
 ## Build ขึ้นใช้งานจริง (Production)
 
